@@ -35,6 +35,9 @@ M.config = {
     path = vim.fs.joinpath(vim.fn.stdpath('data'), 'dart'),
   },
 
+  -- Force the tabline to always be shown, even if no files are currently marked
+  always_show_tabline = true,
+
   mappings = {
     mark = ';;',
     jump = ';',
@@ -60,9 +63,6 @@ M.apply_config = function(config)
     M.order[key] = i
   end
 
-  vim.opt.showtabline = 2
-  vim.opt.tabline = '%!v:lua.Dart.gen_tabline()'
-
   -- setup keymaps
   local function map(mode, lhs, rhs, opts)
     if lhs == '' then
@@ -72,6 +72,10 @@ M.apply_config = function(config)
     vim.keymap.set(mode, lhs, rhs, opts)
   end
 
+  if M.config.always_show_tabline then
+    M.init_tabline()
+  end
+
   map('n', config.mappings.mark, Dart.mark, { desc = 'Dart: mark current buffer' })
   map('n', config.mappings.jump, function()
     Dart.jump(vim.fn.getcharstr())
@@ -79,6 +83,11 @@ M.apply_config = function(config)
   map('n', config.mappings.pick, Dart.pick, { desc = 'Dart: pick buffer' })
   map('n', config.mappings.next, Dart.next, { desc = 'Dart: next buffer' })
   map('n', config.mappings.prev, Dart.prev, { desc = 'Dart: prev buffer' })
+end
+
+M.init_tabline = function()
+  vim.opt.showtabline = 2
+  vim.opt.tabline = '%!v:lua.Dart.gen_tabline()'
 end
 
 M.create_autocommands = function()
@@ -92,13 +101,31 @@ M.create_autocommands = function()
     end,
   })
 
-  -- track last n opened buffers
-  vim.api.nvim_create_autocmd({ 'BufWinEnter', 'BufAdd' }, {
+  -- only initialize/draw tabline after initial state change. this prevents us from having an initially empty tabline, which may look weird.
+  vim.api.nvim_create_autocmd('User', {
     group = group,
-    callback = function(args)
-      M.shift_buflist(vim.api.nvim_buf_get_name(args.buf))
+    once = true,
+    pattern = 'DartChanged',
+    callback = M.init_tabline,
+  })
+
+  vim.api.nvim_create_autocmd('User', {
+    group = group,
+    pattern = 'DartChanged',
+    callback = function()
+      vim.cmd.redrawtabline()
     end,
   })
+
+  -- track last n opened buffers, unless the buffer list has been explicitly made empty by the user
+  if #M.config.buflist > 0 then
+    vim.api.nvim_create_autocmd({ 'BufWinEnter', 'BufAdd' }, {
+      group = group,
+      callback = function(args)
+        M.shift_buflist(vim.api.nvim_buf_get_name(args.buf))
+      end,
+    })
+  end
 
   -- Clickable tabs
   vim.api.nvim_exec2(
@@ -249,6 +276,9 @@ M.shift_buflist = function(filename)
   end
 
   local buflist = M.config.buflist
+  if #buflist == 0 then
+    return
+  end
 
   -- if there's a free buflist mark, set it
   for _, mark in ipairs(buflist) do
@@ -281,6 +311,10 @@ M.cycle_tabline = function(direction)
       end
     end
   end
+end
+
+local emit_change = function()
+  vim.api.nvim_exec_autocmds('User', { pattern = 'DartChanged' })
 end
 
 M.gen_tabpage = function()
@@ -397,7 +431,8 @@ M.mark = function(bufnr, mark)
   table.sort(M.state, function(a, b)
     return (M.order[a.mark] or 998) < (M.order[b.mark] or 999)
   end)
-  vim.cmd.redrawtabline()
+
+  emit_change()
 end
 
 Dart.state = function()

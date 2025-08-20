@@ -76,6 +76,10 @@ A buffer can be pinned using `;;` to add it to the `marklist` and display it reg
     path = vim.fs.joinpath(vim.fn.stdpath('data'), 'dart'),
   },
 
+  -- Force the tabline to always be shown, even if no files are currently marked
+  -- May be useful if `buflist` is empty
+  always_show_tabline = true,
+
   -- Default mappings
   -- Set an individual mapping to an empty string to disable,
   mappings = {

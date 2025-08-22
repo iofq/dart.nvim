@@ -296,6 +296,18 @@ Tabline generator. Use as `vim.opt.tabline = '%!v:lua.Dart.gen_tabline()'`
 
 Returns Dart's state table, for extensibility.
 
+### `Dart.state_from_filename(filename)`
+
+Search Dart's state table by filename. Returns nil if not found
+
+### `Dart.state_from_mark(mark)`
+
+Search Dart's state table by mark. Returns nil if not found
+
+### `Dart.should_show(filename)`
+
+Returns true if a file should be shown (is valid, buflisted, etc.), and false if not.
+
 ## Comparison with similar plugins
 
 `dart.nvim` is quite similar to other Neovim plugins, and its main differentiators are the tabline-first workflow and small codebase.

@@ -328,29 +328,39 @@ M.next_unused_mark = function()
 end
 
 M.shift_buflist = function(filename)
-  if M.state_from_filename(filename) or not M.should_show(filename) then
-    return
-  end
-
   local buflist = M.config.buflist
-  if #buflist == 0 then
+
+  if #buflist == 0 or M.state_from_filename(filename) or not M.should_show(filename) then
     return
   end
 
-  -- if there's a free buflist mark, set it
+  -- get buflist state items and sort
+  local items = {}
   for _, mark in ipairs(buflist) do
-    if not M.state_from_mark(mark) then
-      return M.mark(M.get_bufnr(filename), mark)
+    local item = M.state_from_mark(mark)
+    if item then
+      table.insert(items, item)
     end
   end
 
-  -- if not, shift buflist right and set new buffer to element 1
-  for i = #buflist, 2, -1 do
-    local mark = M.state_from_mark(buflist[i])
-    local next = M.state_from_mark(buflist[i - 1])
-    mark.filename = next.filename
+  -- if buflist is empty, add first file
+  local bufnr = M.get_bufnr(filename)
+  if #items == 0 then
+    return M.mark(bufnr, buflist[1])
   end
-  M.state_from_mark(buflist[1]).filename = filename
+
+  -- if not empty, iterate from the end and shift right
+  for i = #items, 1, -1 do
+    local path = items[i].filename
+    if not (i + 1 > #buflist) then
+      M.state_from_filename(path).mark = buflist[i + 1]
+    else
+      M.del_by_filename(path)
+    end
+  end
+
+  -- finally, update the leftmost item file
+  M.mark(bufnr, buflist[1])
   M.emit_change()
 end
 
@@ -604,6 +614,9 @@ Dart.mark = M.mark
 Dart.unmark = M.unmark
 Dart.read_session = M.read_session
 Dart.write_session = M.write_session
+Dart.state_from_mark = M.state_from_mark
+Dart.state_from_filename = M.state_from_filename
+Dart.should_show = M.should_show
 
 Dart.jump = function(mark)
   local m = M.state_from_mark(mark)

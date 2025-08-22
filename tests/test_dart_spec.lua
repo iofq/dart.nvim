@@ -1,34 +1,17 @@
 -- init child neovim for tests
+MiniTest = _G.MiniTest -- fixes linter
 local child = MiniTest.new_child_neovim()
-
-local sep = package.config:sub(1, 1)
 
 -- helpers
 local set = MiniTest.new_set
 local eq = MiniTest.expect.equality
-local load_module = function(config)
-  child.lua('require("dart").setup(...)', { config })
-end
-
-local contains = function(haystack, needle)
-  for _, n in ipairs(haystack) do
-    if n == needle then
-      return true
-    end
-  end
-  return false
-end
-
-local edit_path = function(_path)
-  child.cmd('edit tests/dir/' .. _path)
-end
 
 -- ripped this func from mini.tabline tests :)
 local eval_tabline = function(show_hl, show_action)
   show_hl = show_hl or false
   show_action = show_action or false
 
-  local res = child.lua_get('Dart.gen_tabline()'):gsub(sep, '/')
+  local res = child.lua_get('Dart.gen_tabline()'):gsub(package.config:sub(1, 1), '/')
 
   if not show_hl then
     res = res:gsub('%%#[^#]+%w+#', '')
@@ -39,11 +22,20 @@ local eval_tabline = function(show_hl, show_action)
   return res
 end
 
-local do_dart_test = function(params, config)
-  load_module(config)
+local do_dart_test = function(params)
+  child.lua('require("dart").setup(...)', { params.config })
 
-  for i, p in ipairs(params.paths) do
-    edit_path(p.src)
+  local contains = function(haystack, needle)
+    for _, n in ipairs(haystack) do
+      if n == needle then
+        return true
+      end
+    end
+    return false
+  end
+
+  for i, path in ipairs(params.paths) do
+    child.cmd('edit tests/dir/' .. path.src)
 
     if params.mark_after and contains(params.mark_after, i) then
       child.lua([[Dart.mark()]])
@@ -90,7 +82,7 @@ T['gen_tabline() with buflist'] = set {
           { src = 'unix/dir1/3.lua' },
           { src = 'unix/dir1/4.lua' },
         },
-        wanted = ' z 4.lua  x 1.lua  c 2.lua ',
+        wanted = ' z 4.lua  x 3.lua  c 2.lua ',
       },
     },
     {
@@ -99,15 +91,11 @@ T['gen_tabline() with buflist'] = set {
           { src = 'unix/dir2/sub1/subdir/init.lua' },
           { src = 'unix/dir2/sub2/subdir/init.lua' },
         },
-        wanted = ' z sub1/subdir/init.lua  x sub2/subdir/init.lua ',
+        wanted = ' z sub2/subdir/init.lua  x sub1/subdir/init.lua ',
       },
     },
   },
 }
-
-T['gen_tabline() with buflist']['works'] = function(params)
-  do_dart_test(params)
-end
 
 T['gen_tabline() with marklist'] = set {
   parametrize = {
@@ -120,7 +108,7 @@ T['gen_tabline() with marklist'] = set {
           { src = 'unix/dir1/4.lua' },
         },
         mark_after = { 4 },
-        wanted = ' x 1.lua  c 2.lua  a 4.lua ',
+        wanted = ' x 3.lua  c 2.lua  a 4.lua ',
       },
     },
     {
@@ -149,10 +137,6 @@ T['gen_tabline() with marklist'] = set {
   },
 }
 
-T['gen_tabline() with marklist']['works'] = function(params)
-  do_dart_test(params)
-end
-
 T['gen_tabline() with config custom mark/buflist'] = set {
   parametrize = {
     {
@@ -165,6 +149,10 @@ T['gen_tabline() with config custom mark/buflist'] = set {
           { src = 'unix/dir1/5.lua' },
         },
         mark_after = { 1, 2, 3, 4 },
+        config = {
+          marklist = { '1', '2' },
+          buflist = { '#' },
+        },
         wanted = ' # 5.lua  1 1.lua  2 2.lua  + 4.lua ',
       },
     },
@@ -175,18 +163,15 @@ T['gen_tabline() with config custom mark/buflist'] = set {
           { src = 'unix/dir1/2.lua' },
         },
         mark_after = {},
+        config = {
+          marklist = { '1', '2' },
+          buflist = { '#' },
+        },
         wanted = ' # 2.lua ',
       },
     },
   },
 }
-
-T['gen_tabline() with config custom mark/buflist']['works'] = function(params)
-  do_dart_test(params, {
-    marklist = { '1', '2' },
-    buflist = { '#' },
-  })
-end
 
 T['gen_tabline() with config no buflist'] = set {
   parametrize = {
@@ -196,6 +181,7 @@ T['gen_tabline() with config no buflist'] = set {
           { src = 'unix/dir1/1.lua' },
         },
         mark_after = {},
+        config = { buflist = {} },
         wanted = '',
       },
     },
@@ -205,15 +191,12 @@ T['gen_tabline() with config no buflist'] = set {
           { src = 'unix/dir1/1.lua' },
         },
         mark_after = { 1 },
+        config = { buflist = {} },
         wanted = ' a 1.lua ',
       },
     },
   },
 }
-
-T['gen_tabline() with config no buflist']['works'] = function(params)
-  do_dart_test(params, { buflist = {} })
-end
 
 T['gen_tabline() with truncate_tabline'] = set {
   parametrize = {
@@ -235,10 +218,6 @@ T['gen_tabline() with truncate_tabline'] = set {
   },
 }
 
-T['gen_tabline() with truncate_tabline']['works'] = function(params)
-  do_dart_test(params)
-end
-
 T['gen_tabline() with close_all'] = set {
   parametrize = {
     {
@@ -254,15 +233,11 @@ T['gen_tabline() with close_all'] = set {
           [3] = ';u',
           [4] = ';;',
         },
-        wanted = ' z 2.lua  x 3.lua ',
+        wanted = ' z 3.lua  x 2.lua ',
       },
     },
   },
 }
-
-T['gen_tabline() with close_all']['works'] = function(params)
-  do_dart_test(params)
-end
 
 T['gen_tabline() with bad path'] = set {
   parametrize = {
@@ -274,14 +249,16 @@ T['gen_tabline() with bad path'] = set {
           { src = [[unix/bad\%.dir/init.lua]] },
         },
         -- %% here will get escaped correctly in tabline
-        wanted = ' z 1.lua  x dir1/init.lua  c bad%%.dir/init.lua ',
+        wanted = ' z bad%%.dir/init.lua  x dir1/init.lua  c 1.lua ',
       },
     },
   },
 }
 
-T['gen_tabline() with bad path']['works'] = function(params)
-  do_dart_test(params)
+for _, test in pairs(T) do
+  test['works'] = function(params)
+    do_dart_test(params)
+  end
 end
 
 return T

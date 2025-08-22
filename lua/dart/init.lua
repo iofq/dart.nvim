@@ -238,6 +238,7 @@ M.read_session = function(session)
   local content = M.read_json(path)
   if content ~= nil then
     M.state = content
+    M.emit_change()
   end
 end
 

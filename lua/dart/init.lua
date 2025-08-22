@@ -77,6 +77,7 @@ M.config = {
     pick = ';p', -- Open Dart.pick
     next = '<S-l>', -- Cycle right through the tabline
     prev = '<S-h>', -- Cycle left through the tabline
+    unmark_all = ';u', -- Close all marked and recent buffers
   },
 }
 
@@ -111,6 +112,9 @@ M.apply_config = function(config)
   map('n', config.mappings.pick, Dart.pick, { desc = 'Dart: pick buffer' })
   map('n', config.mappings.next, Dart.next, { desc = 'Dart: next buffer' })
   map('n', config.mappings.prev, Dart.prev, { desc = 'Dart: prev buffer' })
+  map('n', config.mappings.unmark_all, function()
+    Dart.unmark { type = 'all' }
+  end, { desc = 'Dart: unmark all buffers' })
 end
 
 M.init_tabline = function()
@@ -296,7 +300,7 @@ M.next_unused_mark = function()
       return m
     end
   end
-  return 'Z'
+  return '-'
 end
 
 M.shift_buflist = function(filename)
@@ -323,6 +327,7 @@ M.shift_buflist = function(filename)
     mark.filename = next.filename
   end
   M.state_from_mark(buflist[1]).filename = filename
+  M.emit_change()
 end
 
 -- param direction -1 for prev, 1 for next
@@ -495,7 +500,9 @@ M.mark = function(bufnr, mark)
   elseif vim.tbl_contains(M.config.buflist, exists.mark) then
     exists.mark = mark -- allow for re-marking buffers in the buflist
   else
-    return -- skip sort if no change
+    -- if a marked buffer is marked again, instead un-mark it and move it to the buflist
+    M.del_by_filename(filename)
+    M.shift_buflist(filename)
   end
 
   local order = M.config.tabline.order(M.config)
@@ -506,11 +513,39 @@ M.mark = function(bufnr, mark)
   M.emit_change()
 end
 
+M.unmark = function(opts)
+  local marks = ({
+    marks = opts.marks,
+    marklist = M.config.marklist,
+    buflist = M.config.buflist,
+    all = vim.tbl_map(function(m)
+      return m.mark
+    end, M.state),
+  })[opts.type]
+
+  if not marks then
+    return
+  end
+
+  vim.tbl_map(function(m)
+    M.del_by_filename(M.state_from_mark(m).filename)
+  end, marks)
+
+  -- ensure current buffer is shown, if it was wiped out
+  local cur = vim.api.nvim_buf_get_name(0)
+  if not M.state_from_filename(cur) then
+    M.shift_buflist(cur)
+  end
+
+  M.emit_change()
+end
+
 Dart.state = function()
   return M.state
 end
 
 Dart.mark = M.mark
+Dart.unmark = M.unmark
 Dart.read_session = M.read_session
 Dart.write_session = M.write_session
 

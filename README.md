@@ -87,7 +87,6 @@ require('dart').setup({})
     cycle_wraps_around = true,
 
     -- Function to determine the order mark/buflist items will be shown on the tabline
-    -- Accepts the entire Dart config table as an argument
     -- Should return a table with keys being the mark and values being integers,
     -- e.g. { "a": 1, "b", 2 } would sort the "a" mark to the left of "b" on your tabline
     order = function(config)
@@ -100,7 +99,6 @@ require('dart').setup({})
 
     -- Function to format a tabline item after the path is built
     -- e.g. to add an icon
-    -- Accepts an item (as created by gen_tabline_item())
     format_item = function(item)
       local click = string.format('%%%s@SwitchBuffer@', item.bufnr)
       return string.format('%%#%s#%s %s%%#%s#%s %%X', item.hl_label, click, item.label, item.hl, item.content)
@@ -130,6 +128,7 @@ require('dart').setup({})
     pick = ';p', -- Open Dart.pick
     next = '<S-l>', -- Cycle right through the tabline
     prev = '<S-h>', -- Cycle left through the tabline
+    unmark_all = ';u', -- Close all marked and recent buffers
   },
 }
 ```
@@ -232,7 +231,16 @@ Sets the buffer `bufnr` to the given single-character mark from `config.marklist
 If `bufnr` is not specified, defaults to the current buffer.
 If `char` is not specified, defaults to the next unused mark from `marklist`.
 
-If the buffer is in the `buflist`, it will be promoted to the `marklist` using the next unused mark.
+If the buffer is in the `buflist`, it will be promoted to the `marklist` using the next unused mark. If the buffer is already in the marklist, it will be unmarked and moved back to the `buflist`.
+
+### `Dart.unmark({type = string, marks = {}})`
+
+Unmarks buffers, with different behavior based on `type`.
+
+`type = 'marks'` - Unmarks the buffers identified by the `marks` argument, i.e. `unmark({'a', 's'})`
+`type = 'marklist'` - Unmarks all buffers in `config.marklist`
+`type = 'buflist'` - Unmarks all buffers in `config.buflist`
+`type = 'all'` - Unmarks all buffers in `Dart.state()`
 
 ### `Dart.jump(char)`
 

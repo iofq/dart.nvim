@@ -139,10 +139,10 @@ require('dart').setup({})
 - `DartCurrentModified` - the currently selected tabline item, if modified
 - `DartCurrentLabelModified` - label (mark) for the currently selected item, if modified
 
-- `DartCurrent` - visible but not selected tabline items
-- `DartCurrentLabel` - label (mark) for the visible items
-- `DartCurrentModified` - visible tabline items, if modified
-- `DartCurrentLabelModified` - label (mark) for the visible items, if modified
+- `DartVisible` - visible but not selected tabline items
+- `DartVisibleLabel` - label (mark) for the visible items
+- `DartVisibleModified` - visible tabline items, if modified
+- `DartVisibleLabelModified` - label (mark) for the visible items, if modified
 
 - `DartFill` - Tabline fill between the buffer list and tabpage
 - `DartPickLabel` - Label for marks in `Dart.pick`

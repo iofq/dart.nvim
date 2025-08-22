@@ -236,7 +236,7 @@ M.read_session = function(session)
   local filename = session .. '.json'
   local path = vim.fs.joinpath(M.config.persist.path, filename)
   local content = M.read_json(path)
-  if content ~= nil then
+  if content ~= nil and #content > 0 then
     M.state = content
     M.emit_change()
   end

@@ -111,6 +111,9 @@ require('dart').setup({})
     -- argument to pass to vim.fn.fnamemodify `mods`, before displaying the file path in the picker
     -- e.g. ":t" for the filename, ":p:." for relative path to cwd
     path_format = ':t',
+    -- border style for the picker window
+    -- See `:h winborder` for options
+    border = 'rounded',
   },
 
   -- State persistence. Use Dart.read_session and Dart.write_session manually

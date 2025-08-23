@@ -58,6 +58,9 @@ M.config = {
     -- argument to pass to vim.fn.fnamemodify `mods`, before displaying the file path in the picker
     -- e.g. ":t" for the filename, ":p:." for relative path to cwd
     path_format = ':t',
+    -- border style for the picker window
+    -- See `:h winborder` for options
+    border = 'rounded',
   },
 
   -- State persistence. Use Dart.read_session and Dart.write_session manually
@@ -566,7 +569,7 @@ Dart.pick = function()
     col = math.floor((vim.o.columns - (row_len + 2)) / 2),
     anchor = 'NW',
     style = 'minimal',
-    border = 'rounded',
+    border = M.config.picker.border,
     focusable = true,
   })
 end

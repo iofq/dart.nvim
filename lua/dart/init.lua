@@ -300,7 +300,7 @@ M.next_unused_mark = function()
       return m
     end
   end
-  return '-'
+  return '+'
 end
 
 M.shift_buflist = function(filename)
@@ -404,19 +404,20 @@ M.expand_paths = function(items)
   if recurse then
     return M.expand_paths(items)
   else
+    -- escape % in tabline items
+    for _, item in ipairs(items) do
+      item.content = item.content:gsub('%%', '%%%%')
+    end
     return items
   end
 end
 
 M.add_parent_path = function(item)
+  local full = vim.api.nvim_buf_get_name(item.bufnr)
   local sep = package.config:sub(1, 1)
-	local path = vim.pesc(item.content)
-	local full = vim.api.nvim_buf_get_name(item.bufnr)
-	local sep = vim.pesc(package.config:sub(1, 1))
 
-	local regex = string.format("[^%s]+%s%s$", sep, sep, path)
-	local prefix = full:match(regex)
-	return prefix or item.content
+  local regex = string.format('[^%s]+%s%s$', sep, sep, vim.pesc(item.content))
+  return full:match(regex) or item.content
 end
 
 M.truncate_tabline = function(items, center, columns)
@@ -479,6 +480,9 @@ M.mark = function(bufnr, mark)
   end
   if not mark then
     mark = M.next_unused_mark()
+    if not mark then
+      return M.mark(bufnr, '+')
+    end
   end
 
   local filename = vim.api.nvim_buf_get_name(bufnr)
@@ -486,14 +490,21 @@ M.mark = function(bufnr, mark)
     return
   end
 
-  local exists = M.state_from_filename(filename)
-  if not exists then
+  -- If mark already exists, update it to new file
+  local mark_exists = M.state_from_mark(mark)
+  if mark_exists then
+    mark_exists.filename = filename
+    return
+  end
+
+  local file_exists = M.state_from_filename(filename)
+  if not file_exists then
     table.insert(M.state, {
       mark = mark,
       filename = vim.fn.fnamemodify(filename, ':p'),
     })
-  elseif vim.tbl_contains(M.config.buflist, exists.mark) then
-    exists.mark = mark -- allow for re-marking buffers in the buflist
+  elseif vim.tbl_contains(M.config.buflist, file_exists.mark) then
+    file_exists.mark = mark -- allow for re-marking buffers in the buflist
   else
     -- if a marked buffer is marked again, instead un-mark it and move it to the buflist
     M.del_by_filename(filename)
@@ -502,7 +513,7 @@ M.mark = function(bufnr, mark)
 
   local order = M.config.tabline.order(M.config)
   table.sort(M.state, function(a, b)
-    return (order[a.mark] or 998) < (order[b.mark] or 999)
+    return (order[a.mark] or 999) < (order[b.mark] or 999)
   end)
 
   M.emit_change()

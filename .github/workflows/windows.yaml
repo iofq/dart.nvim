@@ -1,0 +1,24 @@
+name: CI Windows
+permissions:
+  contents: read
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-win64:
+    name: Run Lua tests
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        nvim_version: ['v0.11.3']
+    env:
+      NVIM: 'nvim-win64\\bin\\nvim.exe'
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: |
+          curl -L https://github.com/neovim/neovim/releases/download/${{ matrix.nvim_version }}/nvim-win64.zip -o nvim-win64.zip
+          Expand-Archive -Path nvim-win64.zip -DestinationPath .
+          & "$Env:NVIM" -l ./tests/minit-win.lua --minitest

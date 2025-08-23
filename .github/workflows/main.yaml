@@ -8,13 +8,16 @@ on:
 
 jobs:
   lint:
-    name: Check lua formatting
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
 
-      - run: nix develop --command "stylua" "--check" "."
+      - name: Check Lua formatting
+        run: nix develop --command "stylua" "--check" "."
+
+      - name: Run Lua tests
+        run: nix develop --command "run-tests"
   build:
     name: Nix build on ${{ matrix.os }}
     needs: lint

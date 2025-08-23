@@ -24,14 +24,21 @@
           inherit version;
           src = pkgs.lib.cleanSourceWith {
             src = ./.;
-            filter = path: type: type == "directory" || (builtins.match ".*lua" (builtins.baseNameOf path) != null);
+            filter =
+              path: type: type == "directory" || (builtins.match ".*lua" (builtins.baseNameOf path) != null);
           };
         };
+        nvim-mini-test = import ./tests/nvim.nix { inherit pkgs; };
         shell = pkgs.mkShell {
           name = "dart-nvim-shell";
           buildInputs = with pkgs; [
             lua-language-server
             stylua
+            nvim-mini-test
+            (pkgs.writeShellScriptBin "run-tests" ''
+              cd $(git rev-parse --show-toplevel)
+              "${nvim-mini-test}"/bin/nvim-mini-test --headless -c "lua MiniTest.run()"
+            '')
           ];
         };
       in

@@ -410,18 +410,13 @@ end
 
 M.add_parent_path = function(item)
   local sep = package.config:sub(1, 1)
-  local path = item.content
-  local full = vim.api.nvim_buf_get_name(item.bufnr)
+	local path = vim.pesc(item.content)
+	local full = vim.api.nvim_buf_get_name(item.bufnr)
+	local sep = vim.pesc(package.config:sub(1, 1))
 
-  local pattern_sep = sep == '\\' and '\\\\' or sep
-
-  local prefix = full:match('^(.*)' .. pattern_sep .. path .. '$')
-  if not prefix then
-    return nil
-  end
-
-  local last_folder = prefix:match('[^' .. pattern_sep .. ']+$')
-  return last_folder .. sep .. path
+	local regex = string.format("[^%s]+%s%s$", sep, sep, path)
+	local prefix = full:match(regex)
+	return prefix or item.content
 end
 
 M.truncate_tabline = function(items, center, columns)

@@ -3,7 +3,8 @@
 
 dart.nvim is a minimalist tabline focused on pinning buffers for fast switching between a group of files. Pick a file and throw a single-character dart to jump to it.
 
-![large.png](https://github.com/user-attachments/assets/5ca4bb2f-ef67-4c75-8b2c-68904ede875c)
+<img width="1052" height="1004" alt="scrot-2025-08-24T21:42:08" src="https://github.com/user-attachments/assets/d8123fcb-d1d5-4859-954e-e7cb7a5ad8c5" />
+
 
 ## Introduction
 
@@ -53,7 +54,11 @@ dart.nvim is a minimalist tabline focused on pinning buffers for fast switching 
 ```lua
 {
     'iofq/dart.nvim',
-    opts = {}
+    dependencies = {
+        'echasnovski/mini.nvim', -- optional, icons provider
+        'nvim-tree/nvim-web-devicons' -- optional, icons provider
+    },
+    opts = {} -- see Configuration section
 }
 ````
 
@@ -86,6 +91,15 @@ require('dart').setup({})
     -- If true, Dart.next and Dart.prev will wrap around the tabline
     cycle_wraps_around = true,
 
+    -- Override the default label foreground highlight
+    -- You can also use the DartVisibleLabel/DartCurrentLabel/etc. highlights
+    -- to override the label highlights entirely.
+    label_fg = 'orange',
+
+    -- Display icons in the tabline
+    -- Supported icon providers are mini.icons and nvim-web-devicons
+    icons = true,
+
     -- Function to determine the order mark/buflist items will be shown on the tabline
     -- Should return a table with keys being the mark and values being integers,
     -- e.g. { "a": 1, "b", 2 } would sort the "a" mark to the left of "b" on your tabline
@@ -98,10 +112,18 @@ require('dart').setup({})
     end,
 
     -- Function to format a tabline item after the path is built
-    -- e.g. to add an icon
     format_item = function(item)
-      local click = string.format('%%%s@SwitchBuffer@', item.bufnr)
-      return string.format('%%#%s#%s %s%%#%s#%s %%X', item.hl_label, click, item.label, item.hl, item.content)
+      local icon = item.icon ~= nil and string.format('%s  ', item.icon) or ''
+      return string.format(
+        '%%#%s#%s %s%%#%s#%s%%#%s#%s %%X',
+        item.hl,
+        item.click,
+        icon,
+        item.hl_label,
+        item.label,
+        item.hl,
+        item.content
+      )
     end,
   },
 
@@ -149,6 +171,8 @@ require('dart').setup({})
 - `DartFill` - Tabline fill between the buffer list and tabpage
 - `DartPickLabel` - Label for marks in `Dart.pick`
 
+You can also use the `config.tabline.label_fg` to only change the label foreground color (which is easier than overriding all 4 `*Label*` highlights)
+
 
 ## Persistence/sessions
 `dart.nvim` supports basic session persistence and can be integrated with `mini.sessions` like so:
@@ -170,19 +194,21 @@ require('mini.sessions').setup {
 
 ## Recipes
 
-#### Icons in tabline, using `config.tabline.format_item` and `mini.icons`:
-<img width="436" height="76" alt="scrot-2025-08-20T23:49:12" src="https://github.com/user-attachments/assets/4cd3e178-131b-4390-acd3-25ed8af03d1a" />
+#### Move tabline icons to the right of label
+<img width="611" height="104" alt="scrot-2025-08-24T22:09:39" src="https://github.com/user-attachments/assets/17e85e12-44c6-4949-9b6f-62386c1f9f0a" />
 
 ```lua
-require('dart').setup({
-  tabline = {
-    format_item = function(item)
-      local icon = _G.MiniIcons.get('file', item.content)
-      local click = string.format('%%%s@SwitchBuffer@', item.bufnr)
-      return string.format('%%#%s#%s %s%%#%s#%s %s %%X', item.hl_label, click, item.label, item.hl, icon, item.content)
-    end
-  }
-})
+  format_item = function(item)
+    local content = item.icon ~= nil and string.format('%s %s', item.icon, item.content) or item.content
+    return string.format(
+      '%%#%s#%s %s%%#%s#%s %%X',
+      item.hl_label,
+      item.click,
+      item.label,
+      item.hl,
+      content
+    )
+  end,
 ```
 
 

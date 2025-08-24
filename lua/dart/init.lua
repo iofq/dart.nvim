@@ -35,6 +35,15 @@ M.config = {
     -- If true, Dart.next and Dart.prev will wrap around the tabline
     cycle_wraps_around = true,
 
+    -- Override the default label foreground highlight
+    -- You can also use the DartVisibleLabel/DartCurrentLabel/etc. highlights
+    -- to override the label highlights entirely.
+    label_fg = 'orange',
+
+    -- Display icons in the tabline
+    -- Supported icon providers are mini.icons and nvim-web-devicons
+    icons = true,
+
     -- Function to determine the order mark/buflist items will be shown on the tabline
     -- Should return a table with keys being the mark and values being integers,
     -- e.g. { "a": 1, "b", 2 } would sort the "a" mark to the left of "b" on your tabline
@@ -47,10 +56,18 @@ M.config = {
     end,
 
     -- Function to format a tabline item after the path is built
-    -- e.g. to add an icon
     format_item = function(item)
-      local click = string.format('%%%s@SwitchBuffer@', item.bufnr)
-      return string.format('%%#%s#%s %s%%#%s#%s %%X', item.hl_label, click, item.label, item.hl, item.content)
+      local icon = item.icon ~= nil and string.format('%s  ', item.icon) or ''
+      return string.format(
+        '%%#%s#%s %s%%#%s#%s%%#%s#%s %%X',
+        item.hl,
+        item.click,
+        icon,
+        item.hl_label,
+        item.label,
+        item.hl,
+        item.content
+      )
     end,
   },
 
@@ -104,6 +121,8 @@ M.apply_config = function(config)
   if M.config.tabline.always_show then
     M.init_tabline()
   end
+
+  M.get_icon = M.get_icon_provider()
 
   map('n', config.mappings.mark, Dart.mark, { desc = 'Dart: mark current buffer' })
   map('n', config.mappings.jump, function()
@@ -187,7 +206,12 @@ M.create_default_hl = function()
 
   local override_label = function(hl, link)
     local prev = vim.api.nvim_get_hl(0, { name = link })
-    vim.api.nvim_set_hl(0, hl, { bg = prev.bg or '', fg = 'orange', bold = true, default = true })
+    vim.api.nvim_set_hl(0, hl, {
+      bg = prev.bg or '',
+      fg = M.config.tabline.label_fg,
+      bold = true,
+      default = true,
+    })
   end
 
   local current = mk_fallback_hl('MiniTablineCurrent', 'TabLineSel')
@@ -365,10 +389,13 @@ M.gen_tabline_item = function(item, cur, bufnr)
   local filename = vim.fn.fnamemodify(item.filename, ':t')
   local modified = vim.bo[bufnr].modified and 'Modified' or ''
 
+  local click = string.format('%%%s@SwitchBuffer@', bufnr)
   local hl_label = is_current and 'DartCurrentLabel' or 'DartVisibleLabel'
   local label = item.mark ~= '' and item.mark .. ' ' or ''
   local hl = is_current and 'DartCurrent' or 'DartVisible'
   local content = filename ~= '' and filename or '*'
+
+  local icon = M.get_icon(filename)
 
   return {
     bufnr = bufnr,
@@ -376,7 +403,30 @@ M.gen_tabline_item = function(item, cur, bufnr)
     label = label,
     hl = hl .. modified,
     content = content,
+    icon = icon,
+    click = click,
   }
+end
+
+M.get_icon_provider = function()
+  local ok_devicons, devicons = pcall(require, 'nvim-web-devicons')
+  if not M.config.tabline.icons then
+    return function(_)
+      return nil
+    end
+  elseif _G.MiniIcons ~= nil then
+    return function(n)
+      return _G.MiniIcons.get('file', n)
+    end
+  elseif ok_devicons then
+    return function(n)
+      return devicons.get_icon(n, nil, { default = true })
+    end
+  else
+    return function(_)
+      return nil
+    end
+  end
 end
 
 M.get_duplicate_paths = function(items)

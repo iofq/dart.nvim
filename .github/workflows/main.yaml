@@ -1,10 +1,13 @@
+---
 name: CI
 permissions:
   contents: read
 
-on:
-  push:
-  pull_request:
+on: [push, pull_request]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -12,15 +15,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
-
-      - name: Check Lua formatting
-        run: nix develop --command "stylua" "--check" "."
-
-      - name: Run Lua tests
-        run: nix develop --command "run-tests"
-  build:
-    name: Nix build on ${{ matrix.os }}
+      - uses: DeterminateSystems/flakehub-cache-action@main
+      - run: nix develop --command "stylua" "--check" "."
+  test:
     needs: lint
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: windows-latest
+            nvim_version: v0.11.3
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - if: runner.os == 'Linux'
+        uses: DeterminateSystems/nix-installer-action@main
+      - if: runner.os == 'Linux'
+        uses: DeterminateSystems/flakehub-cache-action@main
+      - if: runner.os == 'Linux'
+        run: nix develop --command "run-tests"
+
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          curl -L https://github.com/neovim/neovim/releases/download/${{ matrix.nvim_version }}/nvim-win64.zip -o nvim-win64.zip
+          Expand-Archive -Path nvim-win64.zip -DestinationPath .
+          nvim-win64\bin\nvim.exe -l ./tests/minit-win.lua --minitest
+  build:
+    needs: [lint, test]
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -29,7 +52,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/flakehub-cache-action@main
-
       - run: nix flake check
       - run: nix develop --command "stylua" "--version"
       - run: nix build .

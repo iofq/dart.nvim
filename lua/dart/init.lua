@@ -137,7 +137,6 @@ M.apply_config = function(config)
 end
 
 M.init_tabline = function()
-  vim.opt.showtabline = 2
   vim.opt.tabline = '%!v:lua.Dart.gen_tabline()'
 end
 
@@ -381,7 +380,17 @@ M.cycle_tabline = function(direction)
   end
 end
 
+M.adjust_showtabline = function()
+  if not (M.config and M.config.tabline.always_show) and vim.tbl_count(M.state) == 0 then
+    --TODO: fetch this value from config
+    vim.opt.showtabline = 0
+  else
+    vim.opt.showtabline = 2
+  end
+end
+
 M.emit_change = function()
+  M.adjust_showtabline()
   vim.api.nvim_exec_autocmds('User', { pattern = 'DartChanged' })
 end
 

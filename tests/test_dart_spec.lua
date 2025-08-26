@@ -36,7 +36,11 @@ local do_dart_test = function(params)
 
   -- init
   for i, path in ipairs(params.paths) do
-    child.cmd('edit tests/dir/' .. path.src)
+    local cmd = 'edit'
+    if path.tab then
+      cmd = 'tabedit'
+    end
+    child.cmd(cmd .. ' tests/dir/' .. path.src)
 
     if params.mark_after and contains(params.mark_after, i) then
       child.lua([[Dart.mark()]])
@@ -187,7 +191,6 @@ T['with config no buflist'] = set {
         paths = {
           { src = 'unix/dir1/1.lua' },
         },
-        mark_after = {},
         config = { buflist = {} },
         wanted = '',
       },
@@ -322,7 +325,7 @@ T['init with always_show=false and no buflist'] = set {
         },
         type_keys = { [2] = ';u' },
         config = { buflist = {}, tabline = { always_show = false } },
-        ['vim.opt.showtabline'] = 2,
+        ['vim.opt.showtabline'] = 1,
       },
     },
     {
@@ -333,7 +336,7 @@ T['init with always_show=false and no buflist'] = set {
         },
         type_keys = { [2] = ';u' },
         config = { buflist = {}, tabline = { always_show = false } },
-        ['vim.opt.showtabline'] = 2,
+        ['vim.opt.showtabline'] = 1,
       },
     },
     {

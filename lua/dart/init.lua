@@ -8,13 +8,15 @@ Dart.setup = function(config)
   if M._setup then
     return
   end
+  _G.Dart = Dart
+
   config = M.setup_config(config or {})
   M.apply_config(config)
   M.create_autocommands()
   M.create_default_hl()
+  M.draw_tabline()
 
   M._setup = true
-  _G.Dart = Dart
 end
 
 M.config = {
@@ -118,9 +120,7 @@ M.apply_config = function(config)
     vim.keymap.set(mode, lhs, rhs, opts)
   end
 
-  if M.config.tabline.always_show then
-    M.init_tabline()
-  end
+  vim.opt.tabline = '%!v:lua.Dart.gen_tabline()'
 
   M.get_icon = M.get_icon_provider()
 
@@ -136,9 +136,21 @@ M.apply_config = function(config)
   end, { desc = 'Dart: unmark all buffers' })
 end
 
-M.init_tabline = function()
-  vim.opt.showtabline = 2
-  vim.opt.tabline = '%!v:lua.Dart.gen_tabline()'
+M.draw_tabline = function()
+  -- save and restore window view if tabline gets shown/hidden
+  local tabline = vim.opt.showtabline
+
+  if tabline ~= 2 and #M.state > 0 or M.config.tabline.always_show then
+    -- save and restore window view if tabline gets shown/hidden
+    local view = vim.fn.winsaveview()
+    vim.opt.showtabline = 2
+    vim.fn.winrestview(view)
+  elseif tabline ~= 1 then
+    local view = vim.fn.winsaveview()
+    vim.opt.showtabline = 1 -- still display if tabpage exists
+    vim.fn.winrestview(view)
+  end
+  vim.cmd.redrawtabline()
 end
 
 M.create_autocommands = function()
@@ -152,20 +164,10 @@ M.create_autocommands = function()
     end,
   })
 
-  -- only initialize/draw tabline after initial state change. this prevents us from having an initially empty tabline, which may look weird.
-  vim.api.nvim_create_autocmd('User', {
-    group = group,
-    once = true,
-    pattern = 'DartChanged',
-    callback = M.init_tabline,
-  })
-
   vim.api.nvim_create_autocmd('User', {
     group = group,
     pattern = 'DartChanged',
-    callback = function()
-      vim.cmd.redrawtabline()
-    end,
+    callback = M.draw_tabline,
   })
 
   -- track last n opened buffers, unless the buffer list has been explicitly made empty by the user

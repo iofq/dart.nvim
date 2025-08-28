@@ -22,18 +22,19 @@ local eval_tabline = function(show_hl, show_action)
   return res
 end
 
+local contains = function(haystack, needle)
+  for _, n in ipairs(haystack) do
+    if n == needle then
+      return true
+    end
+  end
+  return false
+end
+
 local do_dart_test = function(params)
   child.lua('require("dart").setup(...)', { params.config })
 
-  local contains = function(haystack, needle)
-    for _, n in ipairs(haystack) do
-      if n == needle then
-        return true
-      end
-    end
-    return false
-  end
-
+  -- init
   for i, path in ipairs(params.paths) do
     child.cmd('edit tests/dir/' .. path.src)
 
@@ -45,7 +46,13 @@ local do_dart_test = function(params)
     end
   end
 
-  eq(eval_tabline(), params.wanted)
+  -- checks
+  if params['vim.opt.showtabline'] then
+    eq(params['vim.opt.showtabline'], child.api.nvim_get_option_value('showtabline', {}))
+  end
+  if params.wanted then
+    eq(eval_tabline(), params.wanted)
+  end
 end
 
 local T = set {
@@ -58,7 +65,7 @@ local T = set {
   },
 }
 
-T['gen_tabline() with buflist'] = set {
+T['with buflist'] = set {
   parametrize = {
     {
       {
@@ -97,7 +104,7 @@ T['gen_tabline() with buflist'] = set {
   },
 }
 
-T['gen_tabline() with marklist'] = set {
+T['with marklist'] = set {
   parametrize = {
     {
       {
@@ -137,7 +144,7 @@ T['gen_tabline() with marklist'] = set {
   },
 }
 
-T['gen_tabline() with config custom mark/buflist'] = set {
+T['with config custom mark/buflist'] = set {
   parametrize = {
     {
       {
@@ -173,7 +180,7 @@ T['gen_tabline() with config custom mark/buflist'] = set {
   },
 }
 
-T['gen_tabline() with config no buflist'] = set {
+T['with config no buflist'] = set {
   parametrize = {
     {
       {
@@ -198,7 +205,7 @@ T['gen_tabline() with config no buflist'] = set {
   },
 }
 
-T['gen_tabline() with truncate_tabline'] = set {
+T['with truncate_tabline'] = set {
   parametrize = {
     {
       {
@@ -218,7 +225,7 @@ T['gen_tabline() with truncate_tabline'] = set {
   },
 }
 
-T['gen_tabline() with close_all'] = set {
+T['with close_all'] = set {
   parametrize = {
     {
       {
@@ -239,7 +246,7 @@ T['gen_tabline() with close_all'] = set {
   },
 }
 
-T['gen_tabline() with bad path'] = set {
+T['with bad path'] = set {
   parametrize = {
     {
       {
@@ -250,6 +257,94 @@ T['gen_tabline() with bad path'] = set {
         },
         -- %% here will get escaped correctly in tabline
         wanted = ' z bad%%.dir/init.lua  x dir1/init.lua  c 1.lua ',
+      },
+    },
+  },
+}
+
+T['init with always_show'] = set {
+  parametrize = {
+    {
+      {
+        paths = {},
+        ['vim.opt.showtabline'] = 2,
+      },
+    },
+    {
+      {
+        paths = {
+          { src = 'unix/dir1/1.lua' },
+        },
+        ['vim.opt.showtabline'] = 2,
+      },
+    },
+  },
+}
+
+T['init with always_show=false'] = set {
+  parametrize = {
+    {
+      {
+        paths = {},
+        config = { tabline = { always_show = false } },
+        ['vim.opt.showtabline'] = 1,
+      },
+    },
+    {
+      {
+        paths = {
+          { src = 'unix/dir1/1.lua' },
+        },
+        config = { tabline = { always_show = false } },
+        ['vim.opt.showtabline'] = 2,
+      },
+    },
+    {
+      {
+        paths = {
+          { src = 'unix/dir1/1.lua' },
+        },
+        type_keys = { [1] = ';u' },
+        config = { tabline = { always_show = false } },
+        ['vim.opt.showtabline'] = 2,
+      },
+    },
+  },
+}
+
+T['init with always_show=false and no buflist'] = set {
+  parametrize = {
+    {
+      {
+        paths = {
+          { src = 'unix/dir1/1.lua' },
+          { src = 'unix/dir1/2.lua' },
+        },
+        type_keys = { [2] = ';u' },
+        config = { buflist = {}, tabline = { always_show = false } },
+        ['vim.opt.showtabline'] = 2,
+      },
+    },
+    {
+      {
+        paths = {
+          { src = 'unix/dir1/1.lua' },
+          { src = 'unix/dir1/2.lua', tab = true },
+        },
+        type_keys = { [2] = ';u' },
+        config = { buflist = {}, tabline = { always_show = false } },
+        ['vim.opt.showtabline'] = 2,
+      },
+    },
+    {
+      {
+        paths = {
+          { src = 'unix/dir1/1.lua' },
+          { src = 'unix/dir1/2.lua', tab = true },
+        },
+        mark_after = { 1 },
+        config = { buflist = {}, tabline = { always_show = false } },
+        ['vim.opt.showtabline'] = 2,
       },
     },
   },

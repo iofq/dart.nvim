@@ -329,6 +329,43 @@ T['init with always_show=false and no buflist'] = {
   },
 }
 
+T['init with open buffers'] = {
+  {
+    {
+      paths = {},
+      ['vim.opt.showtabline'] = 2,
+      wanted = ' z 2.lua  x 1.lua ',
+    },
+  },
+}
+T['init with open buffers']['works'] = function(params)
+  -- restart child and open files
+  child.restart {
+    '-u',
+    'tests/minit.lua',
+    '-c',
+    'lua require("dart").setup()',
+    '--',
+    'unix/dir1/1.lua',
+    'unix/dir1/2.lua',
+  }
+  do_dart_test(params)
+end
+
+T['open multi buffers'] = {
+  {
+    {
+      paths = {},
+      wanted = ' z 2.lua  x 1.lua ',
+    },
+  },
+}
+T['open multi buffers']['works'] = function(params)
+  child.lua('require("dart").setup()')
+  child.cmd([[args unix/dir1/1.lua unix/dir1/2.lua]])
+  do_dart_test(params)
+end
+
 for name, params in pairs(T) do
   local works = T[name]['works'] or function(p)
     do_dart_test(p)

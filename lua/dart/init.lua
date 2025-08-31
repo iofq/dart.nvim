@@ -172,10 +172,18 @@ M.create_autocommands = function()
 
   -- track last n opened buffers, unless the buffer list has been explicitly made empty by the user
   if #M.config.buflist > 0 then
-    vim.api.nvim_create_autocmd({ 'BufWinEnter', 'BufAdd' }, {
+    vim.api.nvim_create_autocmd({ 'BufWinEnter', 'BufAdd', 'BufReadPost' }, {
       group = group,
       callback = function(args)
         M.shift_buflist(vim.api.nvim_buf_get_name(args.buf))
+      end,
+    })
+    vim.api.nvim_create_autocmd('VimEnter', {
+      group = group,
+      callback = function()
+        vim.tbl_map(function(bufnr)
+          M.shift_buflist(vim.api.nvim_buf_get_name(bufnr))
+        end, vim.api.nvim_list_bufs())
       end,
     })
   end

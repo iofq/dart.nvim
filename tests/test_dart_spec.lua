@@ -209,7 +209,19 @@ T['with truncate_tabline'] = {
       type_keys = {
         [4] = ';f',
       },
-      wanted = ' <  s 1.lua  d 2.lua  f 3.lua ',
+      wanted = ' <  a …llylongfilenamesowhat.lua  s 1.lua  d 2.lua  f 3.lua ',
+    },
+  },
+  {
+    {
+      paths = {
+        { src = 'unix/dir1/yeahthisisareallylongfilenamesowhat.lua' },
+        { src = 'unix/dir1/1.lua' },
+        { src = 'unix/dir1/2.lua' },
+        { src = 'unix/dir1/3.lua' },
+      },
+      mark_after = { 1 },
+      wanted = ' z 3.lua  x 2.lua  c 1.lua  a …llylongfilenamesowhat.lua  > ',
     },
   },
 }

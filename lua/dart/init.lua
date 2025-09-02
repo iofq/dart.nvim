@@ -218,21 +218,11 @@ M.create_default_hl = function()
     return fallback
   end
 
-  local override_label = function(hl, link)
+  local override_label = function(hl, link, fg)
     local prev = vim.api.nvim_get_hl(0, { name = link })
     vim.api.nvim_set_hl(0, hl, {
       bg = prev.bg or '',
-      fg = M.config.tabline.label_fg,
-      bold = true,
-      default = true,
-    })
-  end
-
-  local override_marked_label = function(hl, link)
-    local prev = vim.api.nvim_get_hl(0, { name = link })
-    vim.api.nvim_set_hl(0, hl, {
-      bg = prev.bg or '',
-      fg = M.config.tabline.label_marked_fg,
+      fg = fg,
       bold = true,
       default = true,
     })
@@ -244,40 +234,43 @@ M.create_default_hl = function()
   local visible_modified = mk_fallback_hl('MiniTablineModifiedVisible', 'StatusLine')
   local fill = mk_fallback_hl('MiniTablineFill', 'Normal')
 
+  local label_fg = M.config.tabline.label_fg
+  local label_marked_fg = M.config.tabline.label_marked_fg
+
   -- Current selection
   set_default_hl('DartCurrent', { link = current })
-  override_label('DartCurrentLabel', current)
+  override_label('DartCurrentLabel', current, label_fg)
 
   -- Current selection if modified
   set_default_hl('DartCurrentModified', { link = current_modified })
-  override_label('DartCurrentLabelModified', current_modified)
+  override_label('DartCurrentLabelModified', current_modified, label_fg)
 
   -- Visible but not selected
   set_default_hl('DartVisible', { link = visible })
-  override_label('DartVisibleLabel', visible)
+  override_label('DartVisibleLabel', visible, label_fg)
 
   -- Visible and modified but not selected
   set_default_hl('DartVisibleModified', { link = visible_modified })
-  override_label('DartVisibleLabelModified', visible_modified)
+  override_label('DartVisibleLabelModified', visible_modified, label_fg)
 
   -- Fill
   set_default_hl('DartFill', { link = fill })
 
   -- Pick
-  override_label('DartPickLabel', 'Normal')
+  override_label('DartPickLabel', 'Normal', label_fg)
 
   -- Marked buffers
   set_default_hl('DartMarked', { link = visible })
-  override_marked_label('DartMarkedLabel', visible)
+  override_label('DartMarkedLabel', visible, label_marked_fg)
 
   set_default_hl('DartMarkedModified', { link = visible_modified })
-  override_marked_label('DartMarkedLabelModified', visible_modified)
+  override_label('DartMarkedLabelModified', visible_modified, label_marked_fg)
 
   set_default_hl('DartMarkedCurrent', { link = current })
-  override_marked_label('DartMarkedCurrentLabel', current)
+  override_label('DartMarkedCurrentLabel', current, label_marked_fg)
 
   set_default_hl('DartMarkedCurrentModified', { link = current_modified })
-  override_marked_label('DartMarkedCurrentLabelModified', current_modified)
+  override_label('DartMarkedCurrentLabelModified', current_modified, label_marked_fg)
 end
 
 M.write_json = function(path, tbl)
@@ -536,43 +529,74 @@ M.add_parent_path = function(item)
   return full:match(regex) or item.content
 end
 
-M.truncate_tabline = function(items, center, columns)
+M.truncate_tabline = function(_items, center, available_width)
+  local items = vim.deepcopy(_items)
   local result = { items[center] }
   local left = center - 1
   local right = center + 1
   local trunc_left = false
   local trunc_right = false
 
-  local function width(tabline)
-    return vim.api.nvim_strwidth(table.concat(
-      vim.tbl_map(function(m)
-        return string.format(' %s %s ', m.label, m.content)
-      end, tabline),
-      ''
-    )) + 3 -- save room for trunc
+  local function str_width(item)
+    if item == nil then
+      return 0
+    end
+    local str = M.config.tabline.format_item(item)
+    str = str:gsub('%%#.-#', '') -- remove highlights and clickboxes
+    str = str:gsub('%%%d+@[^@]+@', '')
+    str = str:gsub('%%X', '')
+    return vim.api.nvim_strwidth(str)
   end
 
-  while left >= 1 or right <= #items do
+  local function truncate_to_len(item, target)
+    local len_formatted = str_width(item)
+    local len = vim.api.nvim_strwidth(item.content)
+    local fmt_width = len_formatted - len
+
+    local truncate_to = target - fmt_width - 1 -- 1 for ellipsis
+    if truncate_to < 0 then
+      return nil
+    end
+    return '…' .. vim.fn.strcharpart(item.content, len - truncate_to)
+  end
+
+  local current_width = str_width(items[center])
+
+  while (left >= 1 or right <= #items) and current_width <= available_width do
     local added = false
 
     if left >= 1 then
-      table.insert(result, 1, items[left])
-      if width(result) >= columns then
-        table.remove(result, 1)
+      local item_width = str_width(items[left])
+      if current_width + item_width > available_width then
+        local content = truncate_to_len(items[left], available_width - current_width - 3)
+        if content then
+          items[left].content = content
+          current_width = current_width + str_width(items[left])
+          table.insert(result, 1, items[left])
+        end
         trunc_left = true
       else
-        left = left - 1
+        table.insert(result, 1, items[left])
+        current_width = current_width + item_width
         added = true
+        left = left - 1
       end
     end
     if right <= #items then
-      table.insert(result, items[right])
-      if width(result) >= columns then
-        table.remove(result)
+      local item_width = str_width(items[right])
+      if current_width + item_width >= available_width then
+        local content = truncate_to_len(items[right], available_width - current_width - 3)
+        if content then
+          items[right].content = content
+          current_width = current_width + str_width(items[right])
+          table.insert(result, items[right])
+        end
         trunc_right = true
       else
-        right = right + 1
+        table.insert(result, items[right])
+        current_width = current_width + item_width
         added = true
+        right = right + 1
       end
     end
     if not added then
@@ -663,7 +687,7 @@ M.unmark = function(opts)
 end
 
 Dart.state = function()
-  return M.state
+  return vim.deepcopy(M.state)
 end
 
 Dart.mark = M.mark
@@ -770,8 +794,10 @@ Dart.gen_tabline = function()
 
   items = M.expand_paths(items)
 
-  local truncated = M.truncate_tabline(items, center, vim.o.columns)
-  return truncated .. '%X%#DartFill#' .. M.gen_tabpage()
+  local tabpage = M.gen_tabpage()
+  local available_width = vim.o.columns - vim.api.nvim_strwidth(tabpage)
+  local truncated = M.truncate_tabline(items, center, available_width)
+  return truncated .. '%X%#DartFill#' .. tabpage
 end
 
 return Dart

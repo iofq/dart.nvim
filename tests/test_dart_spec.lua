@@ -329,6 +329,19 @@ T['init with always_show=false and no buflist'] = {
   },
 }
 
+T['with directory'] = {
+  {
+    {
+      paths = {
+        {
+          src = 'unix/dir1/',
+        },
+      },
+      wanted = '',
+    },
+  },
+}
+
 T['init with open buffers'] = {
   {
     {

@@ -349,7 +349,8 @@ end
 
 M.should_show = function(filename)
   local bufnr = M.get_bufnr(filename)
-  return vim.api.nvim_buf_is_valid(bufnr) -- buffer exists and is loaded
+  return vim.fn.isdirectory(filename) == 0 -- dirs don't mix well with a bufferline
+    and vim.api.nvim_buf_is_valid(bufnr) -- buffer exists and is loaded
     and vim.bo[bufnr].buflisted -- don't show hidden buffers
     and vim.bo[bufnr].buftype == '' -- don't show pickers, prompts, etc.
     and vim.api.nvim_buf_get_name(bufnr) ~= '' -- don't show unnamed files
@@ -509,8 +510,11 @@ M.expand_paths = function(items)
 
   for _, item in ipairs(items) do
     if dupes[item.content] then
-      item.content = M.add_parent_path(item)
-      recurse = true
+      local expanded = M.add_parent_path(item)
+      if expanded ~= item.content then
+        recurse = true
+        item.content = expanded
+      end
     end
   end
   if recurse then

@@ -4,6 +4,15 @@ local M = {}
 -- table of {filename = string, mark = string}
 M.state = {}
 
+-- cache table
+M.cache = {
+  tabline = nil,
+  tabpage = 0,
+  tabpagenr = 0,
+  width = 0,
+  current_buf = 0,
+}
+
 Dart.setup = function(config)
   if M._setup then
     return
@@ -406,6 +415,7 @@ M.cycle_tabline = function(direction)
       end
       if M.state[next] then
         vim.api.nvim_set_current_buf(M.get_bufnr(M.state[next].filename))
+        M.emit_change()
         return
       end
     end
@@ -413,6 +423,7 @@ M.cycle_tabline = function(direction)
 end
 
 M.emit_change = function()
+  M.cache.tabline = nil
   vim.api.nvim_exec_autocmds('User', { pattern = 'DartChanged' })
 end
 
@@ -634,6 +645,7 @@ M.mark = function(bufnr, mark)
   local mark_exists = M.state_from_mark(mark)
   if mark_exists then
     mark_exists.filename = filename
+    M.emit_change()
     return
   end
 
@@ -703,6 +715,7 @@ Dart.jump = function(mark)
   if m and m.filename then
     vim.api.nvim_set_current_buf(M.get_bufnr(m.filename))
   end
+  M.emit_change()
 end
 
 Dart.pick = function()
@@ -776,9 +789,20 @@ Dart.prev = function()
 end
 
 Dart.gen_tabline = function()
+  local cur = vim.api.nvim_get_current_buf()
+
+  if
+    M.cache.tabline
+    and M.cache.tabpage == vim.fn.tabpagenr()
+    and M.cache.tabpagenr == vim.fn.tabpagenr('$')
+    and M.cache.width == vim.o.columns
+    and M.cache.current_buf == cur
+  then
+    return M.cache.tabline
+  end
+
   local items = {}
   local center = 1
-  local cur = vim.api.nvim_get_current_buf()
 
   for i, m in ipairs(M.state) do
     if M.should_show(m.filename) then
@@ -797,7 +821,14 @@ Dart.gen_tabline = function()
   local tabpage = M.gen_tabpage()
   local available_width = vim.o.columns - vim.api.nvim_strwidth(tabpage)
   local truncated = M.truncate_tabline(items, center, available_width)
-  return truncated .. '%X%#DartFill#' .. tabpage
+  local tabline = truncated .. '%X%#DartFill#' .. tabpage
+
+  M.cache.tabline = tabline
+  M.cache.tabpage = vim.fn.tabpagenr()
+  M.cache.tabpagenr = vim.fn.tabpagenr('$')
+  M.cache.width = vim.o.columns
+  M.cache.current_buf = cur
+  return tabline
 end
 
 return Dart

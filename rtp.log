@@ -1,0 +1,103 @@
+--- Startup times for process: Primary (or UI client) ---
+
+times in msec
+ clock   self+sourced   self:  sourced script
+ clock   elapsed:              other lines
+
+000.003  000.003: --- NVIM STARTING ---
+000.141  000.137: event init
+000.223  000.083: early init
+000.280  000.056: locale set
+000.330  000.051: init first window
+000.735  000.405: inits 1
+000.747  000.012: window checked
+000.751  000.003: parsing arguments
+001.205  000.041  000.041: require('vim.shared')
+001.294  000.037  000.037: require('vim.inspect')
+001.335  000.032  000.032: require('vim._options')
+001.337  000.129  000.059: require('vim._editor')
+001.339  000.194  000.025: require('vim._init_packages')
+001.345  000.400: init lua interpreter
+002.844  001.500: nvim_ui_attach
+003.087  000.243: nvim_set_client_info
+003.091  000.004: --- NVIM STARTED ---
+
+--- Startup times for process: Embedded ---
+
+times in msec
+ clock   self+sourced   self:  sourced script
+ clock   elapsed:              other lines
+
+000.003  000.003: --- NVIM STARTING ---
+000.155  000.152: event init
+000.230  000.075: early init
+000.288  000.058: locale set
+000.334  000.047: init first window
+000.704  000.370: inits 1
+000.720  000.016: window checked
+000.724  000.004: parsing arguments
+001.168  000.040  000.040: require('vim.shared')
+001.255  000.035  000.035: require('vim.inspect')
+001.296  000.033  000.033: require('vim._options')
+001.299  000.125  000.058: require('vim._editor')
+001.301  000.195  000.030: require('vim._init_packages')
+001.304  000.385: init lua interpreter
+001.363  000.059: expanding arguments
+001.387  000.024: inits 2
+001.619  000.232: init highlight
+001.621  000.002: waiting for UI
+001.731  000.110: done waiting for UI
+001.737  000.006: clear screen
+001.857  000.011  000.011: require('vim.keymap')
+002.517  000.128  000.128: sourcing nvim_exec2()
+002.719  000.979  000.841: require('vim._defaults')
+002.722  000.006: init default mappings & autocommands
+002.805  000.083: --cmd commands
+003.838  000.041  000.041: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/ftplugin.vim
+003.910  000.022  000.022: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/indent.vim
+006.185  000.019  000.019: sourcing nvim_exec2() called at /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/pack/dist/opt/cfilter/plugin/cfilter.lua:0
+006.209  001.293  001.274: require('_vim9script')
+006.220  001.406  000.113: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/pack/dist/opt/cfilter/plugin/cfilter.lua
+006.319  002.120  000.714: sourcing nvim_exec2() called at VIMINIT:0
+007.766  001.388  001.388: sourcing /nix/store/ma3cwpxz45vz7lmqj05shp0hahg893d1-nvim-rtp/colors/iofq.lua
+007.783  001.460  000.072: sourcing nvim_exec2() called at VIMINIT:0
+997.513  991.066: sourcing vimrc file(s)
+997.962  000.074  000.074: sourcing nvim_exec2() called at /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/filetype.lua:0
+997.966  000.231  000.157: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/filetype.lua
+998.174  000.060  000.060: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/syntax/synload.vim
+998.246  000.209  000.149: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/syntax/syntax.vim
+999.538  000.498  000.498: sourcing /home/e/.nix-profile/share/nvim/site/plugin/fzf.vim
+1000.112  000.175  000.175: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/gzip.vim
+1001.015  000.149  000.149: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/pack/dist/opt/matchit/plugin/matchit.vim
+1001.145  000.998  000.849: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/matchit.vim
+1001.270  000.102  000.102: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/matchparen.vim
+1002.145  000.215  000.215: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/pack/dist/opt/netrw/plugin/netrwPlugin.vim
+1002.253  000.957  000.742: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/netrwPlugin.vim
+1002.375  000.006  000.006: sourcing /nix/store/9w2022xicy1f63bq0y534vj3mlsbda1k-neovim-0.11.3/rplugin.vim
+1002.504  000.212  000.206: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/rplugin.vim
+1002.604  000.040  000.040: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/shada.vim
+1002.648  000.013  000.013: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/spellfile.vim
+1002.742  000.065  000.065: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/tarPlugin.vim
+1002.791  000.014  000.014: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/tutor.vim
+1002.916  000.097  000.097: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/zipPlugin.vim
+1003.014  000.058  000.058: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/editorconfig.lua
+1003.123  000.066  000.066: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/man.lua
+1003.232  000.063  000.063: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/osc52.lua
+1003.291  000.032  000.032: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/plugin/tohtml.lua
+1003.470  000.077  000.077: sourcing /nix/store/b0z11xqnafb6zj08403sqsrvzj7212j4-neovim-unwrapped-0.11.3/share/nvim/runtime/pack/dist/opt/cfilter/plugin/cfilter.lua
+1003.487  002.065: loading rtp plugins
+1003.890  000.403: loading packages
+1004.807  000.918: loading after plugins
+1004.819  000.012: inits 3
+1006.173  001.354: reading ShaDa
+1006.644  000.470: opening buffers
+1006.718  000.074: BufEnter autocommands
+1006.724  000.007: editing files in windows
+1006.878  000.154: VimEnter autocommands
+1007.068  000.166  000.166: require('vim.termcap')
+1007.106  000.021  000.021: require('vim.text')
+1007.124  000.058: UIEnter autocommands
+1007.126  000.002: before starting main loop
+1205.238  198.111: first screen update
+1205.244  000.007: --- NVIM STARTED ---
+

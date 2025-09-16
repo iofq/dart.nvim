@@ -199,6 +199,15 @@ T['with config no buflist'] = {
 T['with truncate_tabline'] = {
   {
     {
+      config = { tabline = { max_item_len = 25 } },
+      paths = {
+        { src = 'unix/dir1/yeahthisisareallylongfilenamesowhat.lua' },
+      },
+      wanted = ' z …allylongfilenamesowhat.lua ',
+    },
+  },
+  {
+    {
       paths = {
         { src = 'unix/dir1/yeahthisisareallylongfilenamesowhat.lua' },
         { src = 'unix/dir1/1.lua' },
@@ -216,12 +225,45 @@ T['with truncate_tabline'] = {
     {
       paths = {
         { src = 'unix/dir1/yeahthisisareallylongfilenamesowhat.lua' },
+        { src = 'unix/dir1/anotherreallylongfilenameforyou.lua' },
         { src = 'unix/dir1/1.lua' },
         { src = 'unix/dir1/2.lua' },
         { src = 'unix/dir1/3.lua' },
       },
-      mark_after = { 1 },
+      mark_after = { 1, 2 },
       wanted = ' z 3.lua  x 2.lua  c 1.lua  a …llylongfilenamesowhat.lua  > ',
+    },
+  },
+  {
+    {
+      paths = {
+        { src = 'unix/dir1/yeahthisisareallylongfilenamesowhat.lua' },
+        { src = 'unix/dir1/anotherreallylongfilenameforyou.lua' },
+        { src = 'unix/dir1/1.lua' },
+        { src = 'unix/dir1/2.lua' },
+        { src = 'unix/dir1/3.lua' },
+      },
+      mark_after = { 1, 2 },
+      type_keys = {
+        [5] = ';a',
+      },
+      wanted = ' <  c 1.lua  a yeahthisisareallylongfilenamesowhat.lua  > ',
+    },
+  },
+  {
+    {
+      paths = {
+        { src = 'unix/dir1/1.lua' },
+        { src = 'unix/dir1/2.lua' },
+        { src = 'unix/dir1/3.lua' },
+        { src = 'unix/dir1/yeahthisisareallylongfilenamesowhat.lua' },
+        { src = 'unix/dir1/anotherreallylongfilenameforyou.lua' },
+      },
+      mark_after = { 1, 2 },
+      type_keys = {
+        [5] = ';s',
+      },
+      wanted = ' <  x …llylongfilenamesowhat.lua  c 3.lua  a 1.lua  s 2.lua ',
     },
   },
 }

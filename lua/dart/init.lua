@@ -11,6 +11,7 @@ M.cache = {
   tabpagenr = 0,
   width = 0,
   current_buf = 0,
+  modified = false,
 }
 
 Dart.setup = function(config)
@@ -58,6 +59,10 @@ M.config = {
     -- Display icons in the tabline
     -- Supported icon providers are mini.icons and nvim-web-devicons
     icons = true,
+
+    -- Truncate tabline items to this length.
+    -- This does not include the label or icon.
+    max_item_len = 50,
 
     -- Function to determine the order mark/buflist items will be shown on the tabline
     -- Should return a table with keys being the mark and values being integers,
@@ -358,6 +363,16 @@ M.should_show = function(filename)
     and vim.api.nvim_buf_get_name(bufnr) ~= '' -- don't show unnamed files
 end
 
+M.is_modified = function()
+  for _, m in ipairs(M.state) do
+    local bufnr = M.get_bufnr(m.filename)
+    if vim.bo[bufnr].modified then
+      return true
+    end
+  end
+  return false
+end
+
 M.next_unused_mark = function()
   for _, m in ipairs(M.config.marklist) do
     if not M.state_from_mark(m) then
@@ -540,14 +555,22 @@ M.add_parent_path = function(item)
   return full:match(regex) or item.content
 end
 
-M.truncate_tabline = function(_items, center, available_width)
-  local items = vim.deepcopy(_items)
-  local result = { items[center] }
-  local left = center - 1
-  local right = center + 1
-  local trunc_left = false
-  local trunc_right = false
+M.truncate_items = function(items, max_len)
+  local function truncate(i)
+    local target = vim.api.nvim_strwidth(i) - max_len
+    if target <= 1 then
+      return i
+    end
+    return '…' .. string.sub(i, target)
+  end
+  for _, item in ipairs(items) do
+    item.content = truncate(item.content)
+  end
 
+  return items
+end
+
+M.truncate_tabline = function(_items, center, available_width)
   local function str_width(item)
     if item == nil then
       return 0
@@ -563,65 +586,94 @@ M.truncate_tabline = function(_items, center, available_width)
     local len_formatted = str_width(item)
     local len = vim.api.nvim_strwidth(item.content)
     local fmt_width = len_formatted - len
+    if target >= len_formatted then
+      return item.content
+    end
 
     local truncate_to = target - fmt_width - 1 -- 1 for ellipsis
-    if truncate_to < 0 then
+    if truncate_to < 1 then
       return nil
     end
-    return '…' .. vim.fn.strcharpart(item.content, len - truncate_to)
+    return '…' .. string.sub(item.content, -truncate_to, -1)
   end
 
+  local items = vim.deepcopy(_items)
+  local result = { items[center] }
+  local left = center - 1
+  local right = center + 1
+  local trunc_left = false
+  local trunc_right = false
   local current_width = str_width(items[center])
 
-  while (left >= 1 or right <= #items) and current_width <= available_width do
-    local added = false
+  local function try_add(direction)
+    local index = direction == -1 and left or right
+    local item = items[index]
+    if not item or index < 1 or index > #items then
+      return false
+    end
 
-    if left >= 1 then
-      local item_width = str_width(items[left])
-      if current_width + item_width > available_width then
-        local content = truncate_to_len(items[left], available_width - current_width - 3)
-        if content then
-          items[left].content = content
-          current_width = current_width + str_width(items[left])
-          table.insert(result, 1, items[left])
-        end
+    local item_width = str_width(item)
+    if current_width + item_width > available_width then
+      -- account for " > " indicator when we truncate item, but only once
+      local is_trunc = direction == -1 and trunc_left or trunc_right
+      if not is_trunc then
+        current_width = current_width + 3
+      end
+      if direction == -1 then
         trunc_left = true
       else
-        table.insert(result, 1, items[left])
-        current_width = current_width + item_width
-        added = true
-        left = left - 1
-      end
-    end
-    if right <= #items then
-      local item_width = str_width(items[right])
-      if current_width + item_width >= available_width then
-        local content = truncate_to_len(items[right], available_width - current_width - 3)
-        if content then
-          items[right].content = content
-          current_width = current_width + str_width(items[right])
-          table.insert(result, items[right])
-        end
         trunc_right = true
-      else
-        table.insert(result, items[right])
-        current_width = current_width + item_width
-        added = true
-        right = right + 1
       end
+
+      -- lookahead to the next tabline item
+      -- if we would truncate it and add the truncation indicator,
+      -- we need to make room for it now
+      local content = truncate_to_len(item, available_width - current_width)
+      local next = direction == -1 and right or left
+      local next_item = items[next]
+      if
+        next_item
+        and truncate_to_len(next_item, available_width - current_width - str_width(item)) ~= next_item.content
+      then
+        content = truncate_to_len(item, available_width - current_width - 3)
+      end
+
+      if not content then
+        return false
+      end
+      item.content = content
     end
-    if not added then
+
+    if direction == -1 then
+      table.insert(result, 1, item)
+      left = left - 1
+    else
+      table.insert(result, item)
+      right = right + 1
+    end
+    current_width = current_width + str_width(item)
+    return true
+  end
+
+  while (left >= 1 or right <= #items) and current_width <= available_width do
+    local added_left = try_add(-1)
+    local added_right = try_add(1)
+    if not (added_left or added_right) then
       break
     end
   end
 
+  local tabline = table.concat(
+    vim.tbl_map(function(n)
+      return M.config.tabline.format_item(n)
+    end, result),
+    ''
+  )
+
+  local fill = string.rep(' ', available_width - current_width)
   return (trunc_left and '%#DartVisibleLabel# < ' or '')
-    .. table.concat(
-      vim.tbl_map(function(n)
-        return M.config.tabline.format_item(n)
-      end, result),
-      ''
-    )
+    .. tabline
+    .. (trunc_right and '%#DartVisible#' .. fill or '')
     .. (trunc_right and '%#DartVisibleLabel# > ' or '')
 end
 
@@ -797,6 +849,7 @@ Dart.gen_tabline = function()
     and M.cache.tabpagenr == vim.fn.tabpagenr('$')
     and M.cache.width == vim.o.columns
     and M.cache.current_buf == cur
+    and M.cache.modified == M.is_modified()
   then
     return M.cache.tabline
   end
@@ -817,6 +870,7 @@ Dart.gen_tabline = function()
   end
 
   items = M.expand_paths(items)
+  items = M.truncate_items(items, M.config.tabline.max_item_len)
 
   local tabpage = M.gen_tabpage()
   local available_width = vim.o.columns - vim.api.nvim_strwidth(tabpage)
@@ -828,6 +882,7 @@ Dart.gen_tabline = function()
   M.cache.tabpagenr = vim.fn.tabpagenr('$')
   M.cache.width = vim.o.columns
   M.cache.current_buf = cur
+  M.cache.modified = M.is_modified()
   return tabline
 end
 

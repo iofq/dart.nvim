@@ -3,7 +3,7 @@ let
   nvim-mini-test = pkgs.wrapNeovimUnstable pkgs.neovim-unwrapped (
     pkgs.neovimUtils.makeNeovimConfig {
       plugins = with pkgs.vimPlugins; [ mini-test ];
-      luaRcContent = (builtins.readFile ./minit.lua);
+      customLuaRC = (builtins.readFile ./minit.lua);
     }
   );
 in

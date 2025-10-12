@@ -709,6 +709,15 @@ Dart.pick = function()
     table.insert(prompt, entry)
   end
 
+  vim.keymap.set('n', '<CR>', function()
+    local line = vim.api.nvim_get_current_line()
+    local mark = line:match('^%s*(.-)%s*→')
+    if mark ~= nil then
+      vim.api.nvim_win_close(0, true)
+      Dart.jump(mark)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, prompt)
   for i = 1, #prompt do
     vim.api.nvim_buf_set_extmark(buf, ns, i - 1, 0, {

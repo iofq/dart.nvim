@@ -31,7 +31,7 @@ dart.nvim is a minimalist tabline focused on pinning buffers for fast switching 
 
 ⦿ Cycle through the tabline with `Dart.next` and `Dart.prev` as a replacement for `gt`/`:bnext`, or jump to a specific buffer by character with `Dart.jump`
 
-⦿ Simple `Dart.pick` 'picker' to jump to any marked buffer with a single keystroke
+⦿ Simple `Dart.pick` 'picker' to jump to any marked buffer with a single keystroke, or navigate to one and jump with the `<CR>` key
 
 ⦿ Basic session persistence integrates with plugins like `mini.sessions`
 
@@ -313,7 +313,7 @@ Jumps to the buffer assigned to the given `char` mark.
 
 ### `Dart.pick()`
 
-Opens a floating picker window that lists all active marks. Jump to one by pressing the corresponding key.
+Opens a floating picker window that lists all active marks. Jump to one by pressing the corresponding key or navigate to one and jump with the `<CR>` key.
 
 ### `Dart.read_session(name)`
 

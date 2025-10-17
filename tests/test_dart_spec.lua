@@ -247,7 +247,7 @@ T['with truncate_tabline'] = {
       type_keys = {
         [5] = ';a',
       },
-      wanted = ' <  c 1.lua  a yeahthisisareallylongfilenamesowhat.lua  > ',
+      wanted = ' <  c 1.lua  a yeahthisisareallylongfilenamesowhat.lua       > ',
     },
   },
   {

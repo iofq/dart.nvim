@@ -54,7 +54,7 @@ M.config = {
 
     -- Override the default marked label foreground highlight
     -- This applies specifically to marked buffer labels
-    label_marked_fg = 'orange',
+    label_marked_fg = 'cyan',
 
     -- Display icons in the tabline
     -- Supported icon providers are mini.icons and nvim-web-devicons

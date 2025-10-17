@@ -98,6 +98,7 @@ M.config = {
     -- border style for the picker window
     -- See `:h winborder` for options
     border = 'rounded',
+    select_mapping = '<CR>',
   },
 
   -- State persistence. Use Dart.read_session and Dart.write_session manually
@@ -798,7 +799,7 @@ Dart.pick = function()
     table.insert(prompt, entry)
   end
 
-  vim.keymap.set('n', '<CR>', function()
+  vim.keymap.set('n', M.config.picker.select_mapping, function()
     local line = vim.api.nvim_get_current_line()
     local mark = line:match('^%s*(.-)%s*→')
     if mark ~= nil then

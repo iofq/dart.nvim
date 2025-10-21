@@ -381,7 +381,7 @@ end
 M.is_modified = function()
   for _, m in ipairs(M.state) do
     local bufnr = M.get_bufnr(m.filename)
-    if vim.bo[bufnr].modified then
+    if bufnr ~= -1 and vim.bo[bufnr].modified then
       return true
     end
   end
@@ -415,6 +415,9 @@ M.shift_buflist = function(filename)
 
   -- if buflist is empty, add first file
   local bufnr = M.get_bufnr(filename)
+  if bufnr == -1 then
+    return
+  end
   if #items == 0 then
     return M.mark(bufnr, buflist[1])
   end
@@ -444,8 +447,11 @@ M.cycle_tabline = function(direction)
         return
       end
       if M.state[next] then
-        vim.api.nvim_set_current_buf(M.get_bufnr(M.state[next].filename))
-        M.emit_change()
+        local buf = M.get_bufnr(M.state[next].filename)
+        if buf ~= -1 then
+          vim.api.nvim_set_current_buf(buf)
+          M.emit_change()
+        end
         return
       end
     end

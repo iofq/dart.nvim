@@ -103,11 +103,15 @@ require('dart').setup({})
 
     -- Override the default marked label foreground highlight
     -- This applies specifically to marked buffer labels
-    label_marked_fg = 'orange',
+    label_marked_fg = 'cyan',
 
     -- Display icons in the tabline
     -- Supported icon providers are mini.icons and nvim-web-devicons
     icons = true,
+
+    -- Truncate tabline items to this length.
+    -- This does not include the label or icon.
+    max_item_len = 50,
 
     -- Function to determine the order mark/buflist items will be shown on the tabline
     -- Should return a table with keys being the mark and values being integers,
@@ -140,9 +144,13 @@ require('dart').setup({})
     -- argument to pass to vim.fn.fnamemodify `mods`, before displaying the file path in the picker
     -- e.g. ":t" for the filename, ":p:." for relative path to cwd
     path_format = ':t',
-    -- border style for the picker window
-    -- See `:h winborder` for options
-    border = 'rounded',
+    -- window options for the picker
+    -- see :h nvim_open_win
+    window = {},
+    mappings = {
+      select = '<CR>',
+      close = '<Esc>',
+    },
   },
 
   -- State persistence. Use Dart.read_session and Dart.write_session manually
@@ -266,6 +274,15 @@ vim.api.nvim_create_autocmd('ColorScheme', {
     vim.api.nvim_set_hl(0, 'DartMarkedModified', { fg = '#f9e2af' }) -- yellow
   end
 })
+```
+
+#### Styling the builtin picker
+```lua
+vim.api.nvim_set_hl(0, "DartPickNormal", { fg = "cyan", bg = "#1a1926" })
+vim.api.nvim_set_hl(0, "DartPickBorder", { fg = "red", bg = "#1a1926" })
+
+local win = Dart.pick()
+vim.api.nvim_set_option_value('winhighlight', "NormalFloat:DartPickNormal,FloatBorder:DartPickBorder,FloatTitle:DartPickNormal", { win = win })
 ```
 
 #### `Snacks` picker for marked buffers

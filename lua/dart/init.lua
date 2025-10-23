@@ -95,10 +95,14 @@ M.config = {
     -- argument to pass to vim.fn.fnamemodify `mods`, before displaying the file path in the picker
     -- e.g. ":t" for the filename, ":p:." for relative path to cwd
     path_format = ':t',
-    -- border style for the picker window
-    -- See `:h winborder` for options
-    border = 'rounded',
-    select_mapping = '<CR>',
+    -- window options for the picker
+    -- see :h nvim_open_win
+    window = {},
+    -- picker-specific mappings
+    mappings = {
+      select = '<CR>',
+      close = '<Esc>',
+    },
   },
 
   -- State persistence. Use Dart.read_session and Dart.write_session manually
@@ -120,6 +124,15 @@ M.config = {
 }
 
 M.setup_config = function(config)
+  if config.picker and config.picker.border then
+    M.config.picker.window.border = config.picker.border
+    vim.deprecate('config.picker.border', 'config.picker.window.border', '?', 'dart.nvim')
+  end
+  if config.picker and config.picker.select_mapping then
+    M.config.picker.mappings.select = config.picker.select_mapping
+    vim.deprecate('config.picker.select_mapping', 'config.picker.mappings.select', '?', 'dart.nvim')
+  end
+
   M.config = vim.tbl_deep_extend('force', M.config, config or {})
   Dart.config = M.config
   return M.config
@@ -774,22 +787,39 @@ end
 Dart.pick = function()
   local buf = vim.api.nvim_create_buf(false, true)
   local ns = vim.api.nvim_create_namespace('dart_pick')
-  local prompt = { 'Jump to buffer:' }
-  local row_len = #prompt[1]
+  local prompt = {}
+  local row_len = 0
+
+  local nmap = function(lhs, rhs)
+    vim.keymap.set('n', lhs, rhs, { buffer = buf, nowait = true, silent = true })
+  end
 
   -- close window on esc and pick mapping
-  for _, map in ipairs { '<Esc>', M.config.mappings.pick } do
-    vim.keymap.set('n', map, function()
-      vim.api.nvim_win_close(0, true)
-    end, { buffer = buf, nowait = true, silent = true })
+  for _, map in ipairs { M.config.picker.mappings.close, M.config.mappings.pick } do
+    if map then
+      nmap(map, function()
+        vim.api.nvim_win_close(0, true)
+      end)
+    end
+  end
+
+  if M.config.picker.mappings.select then
+    nmap(M.config.picker.mappings.select, function()
+      local line = vim.api.nvim_get_current_line()
+      local mark = line:match('^%s*(.-)%s*→')
+      if mark ~= nil then
+        vim.api.nvim_win_close(0, true)
+        Dart.jump(mark)
+      end
+    end)
   end
 
   for _, mark in ipairs(M.state) do
     -- map each mark to jump
-    vim.keymap.set('n', mark.mark, function()
+    nmap(mark.mark, function()
       vim.api.nvim_win_close(0, true)
       Dart.jump(mark.mark)
-    end, { buffer = buf, nowait = true, silent = true })
+    end)
 
     local path = vim.fn.fnamemodify(mark.filename, M.config.picker.path_format)
     local entry = string.format('  %s → %s', mark.mark, path)
@@ -799,15 +829,6 @@ Dart.pick = function()
     table.insert(prompt, entry)
   end
 
-  vim.keymap.set('n', M.config.picker.select_mapping, function()
-    local line = vim.api.nvim_get_current_line()
-    local mark = line:match('^%s*(.-)%s*→')
-    if mark ~= nil then
-      vim.api.nvim_win_close(0, true)
-      Dart.jump(mark)
-    end
-  end, { buffer = buf, nowait = true, silent = true })
-
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, prompt)
   for i = 1, #prompt do
     vim.api.nvim_buf_set_extmark(buf, ns, i - 1, 0, {
@@ -815,12 +836,9 @@ Dart.pick = function()
       hl_group = 'DartPickLabel',
     })
   end
-  vim.api.nvim_buf_set_extmark(buf, ns, 0, 0, {
-    end_line = 1,
-    hl_group = 'DartPickLabel',
-  })
 
-  vim.api.nvim_open_win(buf, true, {
+  local defaults = {
+    title = 'Jump to buffer: ',
     relative = 'editor',
     width = row_len + 2,
     height = #M.state + 2,
@@ -828,9 +846,13 @@ Dart.pick = function()
     col = math.floor((vim.o.columns - (row_len + 2)) / 2),
     anchor = 'NW',
     style = 'minimal',
-    border = M.config.picker.border,
+    border = 'rounded',
     focusable = true,
-  })
+  }
+
+  local win = vim.api.nvim_open_win(buf, true, vim.tbl_deep_extend('force', defaults, M.config.picker.window))
+  vim.wo[win].cursorline = vim.go.cursorline
+  return win
 end
 
 Dart.next = function()

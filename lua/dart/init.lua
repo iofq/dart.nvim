@@ -193,6 +193,7 @@ M.create_autocommands = function()
     group = group,
     callback = function(args)
       M.del_by_filename(vim.api.nvim_buf_get_name(args.buf))
+      M.emit_change()
     end,
   })
 

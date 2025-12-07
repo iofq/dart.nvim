@@ -5,14 +5,7 @@ local M = {}
 M.state = {}
 
 -- cache table
-M.cache = {
-  tabline = nil,
-  tabpage = 0,
-  tabpagenr = 0,
-  width = 0,
-  current_buf = 0,
-  modified = false,
-}
+M.cache = {}
 
 Dart.setup = function(config)
   if M._setup then
@@ -24,7 +17,7 @@ Dart.setup = function(config)
   M.apply_config(config)
   M.create_autocommands()
   M.create_default_hl()
-  M.draw_tabline()
+  M.emit_change()
 
   M._setup = true
 end
@@ -327,6 +320,13 @@ M.read_session = function(session)
   local path = vim.fs.joinpath(M.config.persist.path, filename)
   local content = M.read_json(path)
   if content ~= nil and #content > 0 then
+    -- don't try to display files that aren't open
+    -- generally, the session manager should handle opening files, not dart
+    for i, n in ipairs(content) do
+      if not M.should_show(n.filename) then
+        table.remove(content, i)
+      end
+    end
     M.state = content
     M.emit_change()
   end
@@ -453,7 +453,14 @@ M.cycle_tabline = function(direction)
 end
 
 M.emit_change = function()
-  M.cache.tabline = nil
+  M.cache = {
+    tabline = nil,
+    tabpage = 0,
+    tabpagenr = 0,
+    width = 0,
+    current_buf = 0,
+    modified = false,
+  }
   vim.api.nvim_exec_autocmds('User', { pattern = 'DartChanged' })
 end
 

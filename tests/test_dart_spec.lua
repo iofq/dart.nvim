@@ -433,6 +433,28 @@ T['open multi buffers']['works'] = function(params)
   do_dart_test(params)
 end
 
+T['invalid state'] = {
+  {
+    {
+      paths = {},
+      wanted = '',
+    },
+  },
+}
+T['invalid state']['works'] = function(params)
+  child.lua('require("dart").setup()')
+  child.cmd([[edit unix/dir1/1.lua]])
+  child.lua('Dart.mark()')
+  child.cmd([[edit unix/dir1/2.lua]])
+  child.lua('Dart.write_session("test")')
+
+  child.restart { '-u', 'tests/minit.lua' }
+  child.lua('require("dart").setup()')
+  child.cmd([[edit unix/dir1/3.lua]])
+  child.lua('Dart.read_session("test")')
+  do_dart_test(params)
+end
+
 for name, params in pairs(T) do
   local works = T[name]['works'] or function(p)
     do_dart_test(p)

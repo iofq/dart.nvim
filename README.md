@@ -201,7 +201,9 @@ You can also use the `config.tabline.label_fg` to only change the label foregrou
 
 ## Persistence/sessions
 
-`dart.nvim` supports basic session persistence and can be integrated with `mini.sessions` like so:
+`dart.nvim` supports basic session persistence and can be integrated with:
+
+- `mini.sessions`
 
 ```lua
 require('mini.sessions').setup {
@@ -217,6 +219,40 @@ require('mini.sessions').setup {
   },
 }
 ```
+
+- `persistence.nvim`
+
+```lua
+{
+  "folke/persistence.nvim",
+  event = "BufReadPre",
+  opts = {
+    need = 1,
+    branch = true,
+  },
+  config = function(_, opts)
+    local ps = require("persistence")
+    ps.setup(opts)
+
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "PersistenceSavePost",
+      callback = function()
+        local session = vim.fn.sha256(ps.current(opts)):sub(1, 10)
+        Dart.write_session(session)
+      end,
+    })
+
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "PersistenceLoadPost",
+      callback = function()
+        local session = vim.fn.sha256(ps.current(opts)):sub(1, 10)
+        Dart.read_session(session)
+      end,
+    })
+  end,
+}
+```
+
 
 ## Recipes
 
